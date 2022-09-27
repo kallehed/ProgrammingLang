@@ -1,2 +1,12 @@
 
-say $69 + 4 * 2$
+//say "asd: " (2+2+2 + (2*4*22))
+
+//say (2*2 * (1*123456*1) + 3)
+
+//say "checkpoiasihdashd nt"
+
+create var cool equal to (3 + 4 + 4)
+
+say (cool+34)
+
+//say (cool + 3)
