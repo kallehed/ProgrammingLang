@@ -22,7 +22,7 @@ int ipow(int a, int b) { // a raised to b
 int len_to_char(const char* text, char looking_for) {
     int i = 1;
     while (text[i] != '\0') {
-        if (text[ i ] == looking_for) {
+        if (text[i] == looking_for) {
             return i;
         }
         ++i;
@@ -77,7 +77,10 @@ struct Var_name {
 };
 class Var_Handler {
     std::unordered_map<Var_name, int, Var_name::HashFunction> _vars;
+
+    Var_Handler(const Var_Handler&) = delete;
 public:
+    Var_Handler() {};
     void add_var(Var_name name, int value)
     {
         _vars.insert({ name, value });
@@ -93,15 +96,21 @@ public:
     int get_value(Var_name name) {
         return _vars[name];
     }
+    void set_value(Var_name name, int value) {
+        _vars[name] = value;
+    }
 };
 
 bool legal_var_name_char(char c) { return (c >= 'A' && c <= 'z') || (c >= '0' && c <= '9'); }
 
-// assume first character is '
-Value_and_length extract_var(const char* text, Var_Handler var_handler)
+struct Var_name_and_length {
+    Var_name name;
+    int length;
+};
+
+// assume first character is FIRST OF VAR
+Var_name_and_length extract_var_name(const char* text, Var_Handler& var_handler)
 {
-    
-    //int length = len_to_char(text, ' ');
     int length = len_while_condition(text, legal_var_name_char);
     if (length > 8) { throw std::invalid_argument("Very too long variable"); }
     Var_name name;
@@ -109,6 +118,12 @@ Value_and_length extract_var(const char* text, Var_Handler var_handler)
     for (int i = 0; i < length; ++i) {
         name.chars[i] = text[i];
     }
+    return { name, length };
+}
+
+Value_and_length extract_var_value(const char* text, Var_Handler& var_handler)
+{
+    auto [name, length] = extract_var_name(text, var_handler);
     int value = var_handler.get_value(name);
     var_handler.print_var(name);
     return { value, length };
@@ -190,7 +205,7 @@ Value_and_length eval_math(const char* buffer, Var_Handler& var_handler) {
             }
             else {
                 // it is a variable
-                auto extracted = extract_var(buffer + i, var_handler);
+                auto extracted = extract_var_value(buffer + i, var_handler);
                 result = use_oper(oper, result, extracted.value);
                 i += extracted.length;
             }
@@ -243,12 +258,13 @@ void create_var(const char* text, Var_Handler& var_handler)
     }
 }
 
-void say(const char* text, Var_Handler var_handler)
+void say(const char* text, Var_Handler& var_handler)
 {
     int i = 0;
     while (true) {
         switch (text[i]) {
         case '\0':
+            std::cout << '\n';
             return;
         case '\"':
             i += print_string(text + i);
@@ -264,6 +280,28 @@ void say(const char* text, Var_Handler var_handler)
         }
         }
         ++i;
+    }
+    
+}
+void print_x_chars_of(const char* text, int length)
+{
+    for (int i = 0; i < length; ++i) {
+        std::cout << text[i];
+    }
+}
+
+void set_var(const char* text, Var_Handler& var_handler)
+{
+    auto [name, length] = extract_var_name(text + 1, var_handler);
+
+    if (str_equal(text + length + 1, " to ", 4)) {
+        auto [value, len] = eval_math(text + length + 1 + 4, var_handler);
+        var_handler.set_value(name, value);
+
+        var_handler.print_var(name);
+    }
+    else {
+        throw std::invalid_argument("Wrong semantics very bad");
     }
 }
 
@@ -293,14 +331,14 @@ int main()
                 DEBUG_MSG("say stuff\n");
                 say(buffer + 4, var_handler);
             }
-            else if (str_equal(buffer, "say (", 5)) {
-                
-            }
-            else if (str_equal(buffer, "say \"", 5)) {
-                
-            }
             else if (str_equal(buffer, "create var ", 11)) {
                 create_var(buffer + 10, var_handler);
+            }
+            else if (str_equal(buffer, "set ", 4)) {
+                set_var(buffer + 3, var_handler);
+            }
+            else if (str_equal(buffer, "if (", 4)) {
+                eval_math(buffer + 3, var_handler)
             }
         }
         if (f.fail()) { std::cerr << "FAIL!!!!!"; }

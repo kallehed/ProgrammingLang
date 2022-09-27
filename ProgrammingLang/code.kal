@@ -1,12 +1,28 @@
 
-//say "asd: " (2+2+2 + (2*4*22))
+say "asd: " (2+2+2 + (2*4*22))
 
-//say (2*2 * (1*123456*1) + 3)
+say (2*2 * (1*123456*1) + 3)
 
-//say "checkpoiasihdashd nt"
+say "checkpoiasihdashd nt"
 
-create var cool equal to (3 + 4 + 4)
+create var cool equal to (3 * 4 + 2)
 
-say (cool+34)
+say "cool variable: " (cool)
 
-//say (cool + 3)
+set cool to (cool + 1)
+
+say "cool variable after adding one: " (cool) " yeah"
+
+create var kalle equal to (5)
+
+say "kalle = " (kalle)
+
+set kalle to (kalle + cool)
+
+say "kalle now is = " (kalle)
+
+//if (kalle > 3489):
+//	say "yay"
+//	.
+//else:
+//	say "nay"
