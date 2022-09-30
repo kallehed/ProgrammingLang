@@ -21,8 +21,10 @@ set kalle to (kalle + cool)
 
 say "kalle now is = " (kalle)
 
-//if (kalle > 3489):
-//	say "yay"
-//	.
-//else:
-//	say "nay"
+if (kalle > 3489) {
+say "yay"
+}
+else {
+say "nay"
+}
+say "end"

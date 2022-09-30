@@ -305,42 +305,55 @@ void set_var(const char* text, Var_Handler& var_handler)
     }
 }
 
+constexpr long long SIZE = 128;
+
+int eval_block(std::ifstream& f, char* buffer)
+{
+    Var_Handler var_handler;
+
+    while (f.good()) {
+        f.getline(buffer, SIZE);
+        DEBUG_MSG("Text we have: " << buffer << "\n");
+        if (str_equal(buffer, "//", 2)) {
+            // ignore line
+        }
+        else if (str_equal(buffer, "say ", 4)) {
+            DEBUG_MSG("say stuff\n");
+            say(buffer + 4, var_handler);
+        }
+        else if (str_equal(buffer, "create var ", 11)) {
+            create_var(buffer + 10, var_handler);
+        }
+        else if (str_equal(buffer, "set ", 4)) {
+            set_var(buffer + 3, var_handler);
+        }
+        else if (str_equal(buffer, "if (", 4)) {
+            int expr = eval_math(buffer + 3, var_handler).value;
+            if (expr < 0) { // if failed -> go to else statement
+
+            }
+        }
+        else if (str_equal(buffer, "}", 1)) {
+            // end block
+        }
+    }
+}
+
 int main()
 {
     DEBUG_MSG("Hello World!\n");
 
     //if (til_right_char <'(', ')'>("(12()34((45 + 2))56)") != 19) { throw std::invalid_argument("til_right_char does not work"); }
 
-    Var_Handler var_handler;
-    
     std::ifstream f;
     f.open("code.kal");
-
-    constexpr long long SIZE = 128;
+    
     char buffer[SIZE];
     
     if (f.is_open())
     {
-        while(f.good()) {
-            f.getline(buffer, SIZE);
-            DEBUG_MSG("Text we have: " << buffer << "\n");
-            if (str_equal(buffer, "//", 2)) {
-                // ignore line
-            }
-            else if (str_equal(buffer, "say ", 4)) {
-                DEBUG_MSG("say stuff\n");
-                say(buffer + 4, var_handler);
-            }
-            else if (str_equal(buffer, "create var ", 11)) {
-                create_var(buffer + 10, var_handler);
-            }
-            else if (str_equal(buffer, "set ", 4)) {
-                set_var(buffer + 3, var_handler);
-            }
-            else if (str_equal(buffer, "if (", 4)) {
-                eval_math(buffer + 3, var_handler)
-            }
-        }
+        eval_block(f, buffer);
+        
         if (f.fail()) { std::cerr << "FAIL!!!!!"; }
         f.close(); // Close input ffile
     }
