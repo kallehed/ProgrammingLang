@@ -133,6 +133,7 @@ namespace OPER {
     enum _ : char {
         PLUS,
         MULT,
+        MORE_THAN,
     };
 }
 
@@ -162,6 +163,8 @@ int use_oper (OPER::_ oper, int start_value, int new_value) {
         return start_value + new_value;
     case OPER::MULT:
         return start_value * new_value;
+    case OPER::MORE_THAN:
+        return start_value > new_value;
     default:
         throw std::invalid_argument("INVALID OPER, NOT CORRECT");
     }
@@ -195,6 +198,9 @@ Value_and_length eval_math(const char* buffer, Var_Handler& var_handler) {
             break;
         case '+':
             oper = OPER::PLUS;
+            break;
+        case '>':
+            oper = OPER::MORE_THAN;
             break;
         default:
             if (is_num(buffer[i])) { // is number
@@ -242,20 +248,20 @@ void create_var(const char* text, Var_Handler& var_handler)
 {
     int len_of_name = len_to_char(text, ' ');
     if (len_of_name > 9) { throw std::invalid_argument("Too long variable name error!"); }
-    Var_name name;
-    name.number = 0;
-    for (int i = 1; i < len_of_name; ++i) {
-        name.chars[i - 1] = text[i];
-    }
-    // find what it is equal too
-    if (str_equal(text + len_of_name, " equal to (", 11)) {
-        auto [value, _] = eval_math(text + len_of_name + 10, var_handler);
-        var_handler.add_var(name, value);
-        var_handler.print_var(name);
-    }
-    else {
-        throw std::invalid_argument("Wrong text after creating variable");
-    }
+Var_name name;
+name.number = 0;
+for (int i = 1; i < len_of_name; ++i) {
+    name.chars[i - 1] = text[i];
+}
+// find what it is equal too
+if (str_equal(text + len_of_name, " equal to (", 11)) {
+    auto [value, _] = eval_math(text + len_of_name + 10, var_handler);
+    var_handler.add_var(name, value);
+    var_handler.print_var(name);
+}
+else {
+    throw std::invalid_argument("Wrong text after creating variable");
+}
 }
 
 void say(const char* text, Var_Handler& var_handler)
@@ -281,7 +287,7 @@ void say(const char* text, Var_Handler& var_handler)
         }
         ++i;
     }
-    
+
 }
 void print_x_chars_of(const char* text, int length)
 {
@@ -306,13 +312,13 @@ void set_var(const char* text, Var_Handler& var_handler)
 }
 
 constexpr long long SIZE = 128;
+constexpr int space_per_indent = 4;
 
-int eval_block(std::ifstream& f, char* buffer)
+int eval_block(std::ifstream& f, char* buffer, int indent, Var_Handler& var_handler)
 {
-    Var_Handler var_handler;
-
     while (f.good()) {
         f.getline(buffer, SIZE);
+        buffer = buffer + indent;
         DEBUG_MSG("Text we have: " << buffer << "\n");
         if (str_equal(buffer, "//", 2)) {
             // ignore line
@@ -329,14 +335,52 @@ int eval_block(std::ifstream& f, char* buffer)
         }
         else if (str_equal(buffer, "if (", 4)) {
             int expr = eval_math(buffer + 3, var_handler).value;
-            if (expr < 0) { // if failed -> go to else statement
-
+            if (expr) {
+                eval_block(f, buffer, indent + space_per_indent, var_handler);
+            }
+            else { // if failed -> go to }
+                while (true) {
+                    f.getline(buffer, SIZE);
+                    buffer += indent;
+                    if (str_equal(buffer, "}", 1)) {
+                        break;
+                    }
+                }
             }
         }
-        else if (str_equal(buffer, "}", 1)) {
-            // end block
+        else if (str_equal(buffer, "while (", 7)) {
+            std::streampos start = f.tellg();
+            char while_buffer[SIZE];
+            for (int i = 0; i < SIZE; ++i) {
+                while_buffer[i] = buffer[i];
+            }
+            while (true) {
+                if (eval_math(while_buffer + 6, var_handler).value) {
+
+                    eval_block(f, buffer, indent + space_per_indent, var_handler);
+                    f.seekg(start);
+                }
+                else {
+                    break;
+                }
+                //break;
+            }
+            // go to after while statement
+            while (true) {
+                f.getline(buffer, SIZE);
+                buffer += indent;
+                if (str_equal(buffer, "}", 1)) {
+                    break;
+                }
+            }
         }
+        else if (str_equal(buffer - space_per_indent, "}", 1)) {
+            DEBUG_MSG("breakout!");
+            return 0;
+        }
+        
     }
+    return 0;
 }
 
 int main()
@@ -349,10 +393,12 @@ int main()
     f.open("code.kal");
     
     char buffer[SIZE];
+
+    Var_Handler var_handler;
     
     if (f.is_open())
     {
-        eval_block(f, buffer);
+        eval_block(f, buffer, 0, var_handler);
         
         if (f.fail()) { std::cerr << "FAIL!!!!!"; }
         f.close(); // Close input ffile

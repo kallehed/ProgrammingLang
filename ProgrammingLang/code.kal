@@ -21,10 +21,17 @@ set kalle to (kalle + cool)
 
 say "kalle now is = " (kalle)
 
-if (kalle > 3489) {
-say "yay"
-}
-else {
-say "nay"
-}
+if (kalle > 0) {
+    say "yay"
+    create var kalle2 equal to (15)
+    if ((kalle2 + kalle) > 2) {
+        say "yay2"
+    }             
+}            
+
+while (100 > kalle) {
+    set kalle to (kalle + 9)
+    say "kalle is currently:" (kalle)
+}                  
+
 say "end"
