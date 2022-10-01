@@ -1,37 +1,26 @@
 
-say "asd: " (2+2+2 + (2*4*22))
+kalle = 2 + 1 + (1 * 4 + (1 * 1))
 
-say (2*2 * (1*123456*1) + 3)
+say "kalle is " (kalle + 3) " and " (1+1)
 
-say "checkpoiasihdashd nt"
+if kalle > 3
+    say "kalle exists"
+    .
 
-create var cool equal to (3 * 4 + 2)
+a = 0
+b = 1
 
-say "cool variable: " (cool)
+while a < 20
+    
+    c = b
+    b = a + b
+    a = c
 
-set cool to (cool + 1)
+    say "fib: " (a)
+    .
 
-say "cool variable after adding one: " (cool) " yeah"
+//def KALLE(asd)
+//    say "argument: " (asd)
+//    return 1 + 1
 
-create var kalle equal to (5)
-
-say "kalle = " (kalle)
-
-set kalle to (kalle + cool)
-
-say "kalle now is = " (kalle)
-
-if (kalle > 0) {
-    say "yay"
-    create var kalle2 equal to (15)
-    if ((kalle2 + kalle) > 2) {
-        say "yay2"
-    }             
-}            
-
-while (100 > kalle) {
-    set kalle to (kalle + 9)
-    say "kalle is currently:" (kalle)
-}                  
-
-say "end"
+//say "function returns: " (KALLE(1))
