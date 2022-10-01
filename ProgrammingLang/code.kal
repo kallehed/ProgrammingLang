@@ -1,26 +1,17 @@
 
-kalle = 2 + 1 + (1 * 4 + (1 * 1))
+say "hello"
 
-say "kalle is " (kalle + 3) " and " (1+1)
+a = 3
 
-if kalle > 3
-    say "kalle exists"
-    .
+say "a: " (a)
 
-a = 0
-b = 1
-
-while a < 20
+if a > 2
+    say "success"
     
-    c = b
-    b = a + b
-    a = c
+    say "yay" (1+1)
+    if a < 100
+        say "ASDOJ"
+say "hello2"
 
-    say "fib: " (a)
-    .
 
-//def KALLE(asd)
-//    say "argument: " (asd)
-//    return 1 + 1
-
-//say "function returns: " (KALLE(1))
+say "yes"

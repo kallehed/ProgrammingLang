@@ -20,6 +20,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="code2.kal">
+      <Filter>Resource Files</Filter>
+    </None>
     <None Include="code.kal">
       <Filter>Resource Files</Filter>
     </None>
