@@ -87,7 +87,7 @@ Result_And_If_Nextline_And_Exits Parser::eval_block(char* const buffer, int inde
                 auto extract = eval_block(buffer, indent + space_per_indent, scope, true);
                 should_nextline = extract.should_nextline;
                 if (extract.exits > 0) {
-                    return { 0, false, extract.exits - 1 };
+                    return { extract.result, false, extract.exits - 1 };
                 }
             }
         }
@@ -100,8 +100,11 @@ Result_And_If_Nextline_And_Exits Parser::eval_block(char* const buffer, int inde
             while (true) {
                 if (eval_math(while_buffer + 5, scope).value) {
 
-                    eval_block(buffer, indent + space_per_indent, scope, true);
+                    auto extract = eval_block(buffer, indent + space_per_indent, scope, true);
                     _f.clear();
+                    //if (extract.exits > 0) {
+                    //    return { extract.result, true, extract.exits - 1 };
+                    //}
                     _f.seekg(start);
 
                 }
@@ -112,7 +115,7 @@ Result_And_If_Nextline_And_Exits Parser::eval_block(char* const buffer, int inde
         }
         else if (Util::str_equal(text, ".", 1)) {
             DEBUG_MSG("breakout!");
-            return { 0, true };
+            return { 0, true, 0 };
         }
         else if (Util::str_equal(text, "def ", 4)) {
             DEBUG_MSG("Creating function!\n");
@@ -122,7 +125,7 @@ Result_And_If_Nextline_And_Exits Parser::eval_block(char* const buffer, int inde
             place += def_extract.length;
             Name param_name;
             while (true) {
-                if (Util::legal_var_name_char(place[0])) {
+                if (Util::legal_name_char(place[0])) {
                     auto param_extract = Name_Util::extract_name(place);
                     param_name = param_extract.name;
                     break;
@@ -132,13 +135,14 @@ Result_And_If_Nextline_And_Exits Parser::eval_block(char* const buffer, int inde
             _funcs.add_func(def_extract.name, param_name, _f.tellg());
         }
         else if (Util::str_equal(text, "return ", 7)) {
-            return { eval_math(text + 6, scope).value, true };
+            int exits = indent / space_per_indent - 1;
+            return { eval_math(text + 6, scope).value, true, exits};
         }
-        else if (Util::legal_var_name_char(text[0])) { // variable set to something
+        else if (Util::legal_name_char(text[0])) { // variable set to something
             set_var(text, scope);
         }
     }
-    return { 0 , false };
+    return { 0 , false, 0 };
 }
 
 void Parser::start(const char * const file_path)
@@ -157,7 +161,7 @@ void Parser::start(const char * const file_path)
     {
         eval_block(buffer, 0, scope, true);
 
-        if (_f.fail()) { std::cerr << "FAIL!!!!!"; }
+        //if (_f.fail()) { std::cerr << "FAIL!!!!!"; }
         _f.close(); // Close input ffile
     }
     else { //Error message

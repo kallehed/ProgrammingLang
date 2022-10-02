@@ -12,6 +12,10 @@ int use_oper(OPER::_ oper, int start_value, int new_value) {
         return start_value < new_value;
     case OPER::MINUS:
         return start_value - new_value;
+    case OPER::MOD:
+        return start_value % new_value;
+    case OPER::EQUAL:
+        return start_value == new_value;
     default:
         for (;;) {}
     }

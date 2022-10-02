@@ -15,7 +15,7 @@ size_t Name::HashFunction::operator()(const Name& obj) const
 // assume first character is FIRST OF VAR
 Name_And_Length Name_Util::extract_name(const char* const text)
 {
-    int length = Util::len_while_condition(text, Util::legal_var_name_char);
+    int length = Util::len_while_condition(text, Util::legal_name_char);
     if (length > 8) { for (;; ) {}; }
 
     Name name;

@@ -15,6 +15,8 @@ namespace OPER {
         MORE_THAN,
         LESS_THAN,
         MINUS,
+        MOD,
+        EQUAL,
     };
 }
 

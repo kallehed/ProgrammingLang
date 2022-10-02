@@ -25,6 +25,7 @@ struct Name_And_Length {
 };
 
 namespace Name_Util {
+    // assume first character is FIRST OF VAR
     Name_And_Length extract_name(const char* const text);
 }
 

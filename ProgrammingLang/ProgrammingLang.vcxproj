@@ -136,6 +136,7 @@
     <ClCompile Include="Parser.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Scope.cpp" />
+    <ClCompile Include="Testing.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -150,6 +151,7 @@
     <ClInclude Include="Name.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="Scope.h" />
+    <ClInclude Include="Testing.h" />
     <ClInclude Include="Util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

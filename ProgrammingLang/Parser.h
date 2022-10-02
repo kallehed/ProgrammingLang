@@ -73,7 +73,14 @@ Value_And_Length Parser::eval_math(const char* const buffer, Scope& scope, int r
             if constexpr (priority) { return { result, i }; }
             ++i;
             oper = OPER::MINUS;
-
+            break;
+        case '%':
+            oper = OPER::MOD;
+            ++i;
+            break;
+        case '=':
+            oper = OPER::EQUAL;
+            ++i;
             break;
         default:
             int direct_value;
@@ -84,7 +91,7 @@ Value_And_Length Parser::eval_math(const char* const buffer, Scope& scope, int r
 
                 direct_value = extracted.value;
             }
-            else if (Util::legal_var_name_char(buffer[i])) {
+            else if (Util::legal_name_char(buffer[i])) {
                 // it is a variable OR FUNCTION
                 auto extracted = Name_Util::extract_name(buffer + i);
                 int after_name = i + extracted.length;
@@ -93,6 +100,7 @@ Value_And_Length Parser::eval_math(const char* const buffer, Scope& scope, int r
                     Func func = _funcs.get_func(extracted.name);
                     auto arg_extract = eval_math<>(buffer + after_name, scope);
                     _f.seekg(func.pos);
+
                     char new_buffer[SIZE];
                     Scope new_var_handler;
                     new_var_handler.add_var(func.param_name, arg_extract.value);

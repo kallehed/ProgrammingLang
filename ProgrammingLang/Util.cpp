@@ -42,7 +42,7 @@ Value_And_Length Util::extract_num(const char* const text)
     return { val, length };
 }
 
-bool Util::legal_var_name_char(char c) { return (c >= 'A' && c <= 'z') || (c >= '0' && c <= '9'); }
+bool Util::legal_name_char(char c) { return (c >= 'A' && c <= 'z'); }
 
 bool Util::str_equal(const char* const str1, const char* str2, int len) {
     for (int i = 0; i < len; ++i) {
