@@ -129,12 +129,28 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ProgrammingLang.cpp" />
+    <ClCompile Include="Funcs.cpp" />
+    <ClCompile Include="Io.cpp" />
+    <ClCompile Include="misc.cpp" />
+    <ClCompile Include="Name.cpp" />
+    <ClCompile Include="Parser.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Scope.cpp" />
+    <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="code.kal" />
     <None Include="code2.kal" />
     <None Include="code3.kal" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Funcs.h" />
+    <ClInclude Include="Io.h" />
+    <ClInclude Include="misc.h" />
+    <ClInclude Include="Name.h" />
+    <ClInclude Include="Parser.h" />
+    <ClInclude Include="Scope.h" />
+    <ClInclude Include="Util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

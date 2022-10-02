@@ -16,7 +16,7 @@ def func(param)
 
 say "function testing"
 
-c = n + func(3)
+c = b+func(1)+10*func(0)*2
 
 say "c: " (c)
 say "asd"

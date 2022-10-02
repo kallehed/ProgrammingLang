@@ -30,7 +30,7 @@ def fact(n)
         i = i + 1
     return result
 
-say "factorial " (fact(6) + fact(5))
+say "factorial " (fact(5) + fact(5))
 
 def facttwo(n)
     result = 1
@@ -40,6 +40,6 @@ def facttwo(n)
                  
     return result
 
-say "better factorial: " (facttwo(6))
+say "better factorial: " (facttwo(5))
 
 say "testing"
