@@ -102,7 +102,14 @@ public:
         DEBUG_MSG( "\' with value: " << value << '\n');
     }
     int get_value(Var_name name) {
-        return _vars[name];
+        if (_vars.find(name) == _vars.end()) {
+            std::cout << "ERROR: UNKNOWN VARIABLE: \"" << &(name.chars[0]) << "\"";
+            std::cin.get();
+            throw std::invalid_argument("UNKNOWN VARIABLE");
+        }
+        else {
+            return _vars[name];
+        }
     }
     void set_value(Var_name name, int value) {
         _vars[name] = value;
@@ -112,7 +119,14 @@ public:
         _funcs.insert({ name, {param_name, pos} });
     }
     Func get_func(Var_name name) {
-        return _funcs[name];
+        if (_funcs.find(name) == _funcs.end()) {
+            std::cout << "ERROR:  UNKNOWN FUNCTION: \"" << &(name.chars[0]) << "\"";
+            std::cin.get();
+            throw std::invalid_argument("UNKNOWN FUNCTION");
+        }
+        else {
+            return _funcs[name];
+        }
     }
 };
 
@@ -199,12 +213,12 @@ struct result_and_if_nextline_and_exits {
 
 result_and_if_nextline_and_exits eval_block(std::ifstream& f, char* const buffer, int indent, Var_Handler& var_handler, const bool checkfile = false);
 
-// returns value and length of expression, ASSUMES buffer starts with '(' OR "CHARACTER NOT IMPORTANT TO EXPRESSION"
-Value_and_length eval_math(const char * const buffer, Var_Handler& var_handler, std::ifstream& f) {
-        
+// returns value and length of expression, ASSUMES buffer starts with '(' OR "CHARACTER NOT IMPORTANT TO EXPRESSION". Priority determines whether to stop att UN-priotirized like + or -
+template <bool priority = false>
+Value_and_length eval_math(const char * const buffer, Var_Handler& var_handler, std::ifstream& f, int result = 0)
+{        
     OPER::_ oper = OPER::PLUS;
     int i = 1;
-    int result = 0;
     while (true) {
         switch (buffer[i]) {
         case ' ':
@@ -212,21 +226,23 @@ Value_and_length eval_math(const char * const buffer, Var_Handler& var_handler, 
             break;
         case '(':
         {
-            auto [value, len] = eval_math(buffer + i, var_handler, f);
-            i += len;
+            auto [value, len] = eval_math<>(buffer + i, var_handler, f);
+            i += len + 1;
             result = use_oper(oper, result, value);
             break;
         }
         case ')':
-            goto END_OF_EVAL_MATH;
+            goto END_OF_EVAL_MATH; // TODO: FIX THIS ORDERING
             ++i;
         case '*':
             oper = OPER::MULT;
             ++i;
             break;
         case '+':
-            oper = OPER::PLUS;
+            if constexpr (priority) { return { result, i }; }
             ++i;
+            oper = OPER::PLUS;
+            
             break;
         case '>':
             oper = OPER::MORE_THAN;
@@ -237,15 +253,19 @@ Value_and_length eval_math(const char * const buffer, Var_Handler& var_handler, 
             ++i;
             break;
         case '-':
-            oper = OPER::MINUS;
+            if constexpr (priority) { return { result, i }; }
             ++i;
+            oper = OPER::MINUS;
+            
             break;
         default:
+            int direct_value;
             if (is_num(buffer[i])) { // is number
                 auto extracted = extract_num(buffer + i);
                 DEBUG_MSG("IS NUM!!! " << " num: " << extracted.value << "\n");
                 i += extracted.length;
-                result = use_oper(oper, result, extracted.value);
+
+                direct_value = extracted.value;
             }
             else if (legal_var_name_char(buffer[i])) {
                 // it is a variable OR FUNCTION
@@ -254,20 +274,19 @@ Value_and_length eval_math(const char * const buffer, Var_Handler& var_handler, 
                 if (buffer[after_name] == '(') { // FUNCTION
                     auto start = f.tellg();
                     Func func = var_handler.get_func(extracted.name);
-                    auto arg_extract = eval_math(buffer + after_name, var_handler, f);
-                    
+                    auto arg_extract = eval_math<>(buffer + after_name, var_handler, f);
                     f.seekg(func.pos);
                     char new_buffer[SIZE];
                     Var_Handler new_var_handler;
                     new_var_handler.add_var(func.param_name, arg_extract.value);
-                    result = use_oper(oper, result, eval_block(f, new_buffer, space_per_indent, new_var_handler).result);
+                    direct_value = eval_block(f, new_buffer, space_per_indent, new_var_handler).result;
 
-                    i += after_name + arg_extract.length;
+                    i += extracted.length + arg_extract.length;
 
                     f.seekg(start);
                 }
                 else { // Variable
-                    result = use_oper(oper, result, var_handler.get_value(extracted.name));
+                    direct_value = var_handler.get_value(extracted.name);
                     i += extracted.length;
                 }
             }
@@ -275,6 +294,12 @@ Value_and_length eval_math(const char * const buffer, Var_Handler& var_handler, 
                 DEBUG_MSG("ILLEGAL CHAR: " << buffer[i] << '\n');
                 goto END_OF_EVAL_MATH;
             }
+
+            // look forward after direct value, possibly apply priority
+            auto new_extract = eval_math<true>(buffer + i - 1, var_handler, f, direct_value);
+            i += new_extract.length - 1; // minus 1
+            result = use_oper(oper, result, new_extract.value);
+
             break;
         }
     }
@@ -381,13 +406,14 @@ result_and_if_nextline_and_exits eval_block(std::ifstream& f, char* const buffer
             f.getline(buffer, SIZE);
             
             len_of_line = len_to_char(buffer - 1, '\0');
-            if (len_of_line <= indent) {
+            if (len_of_line - 1 <= indent) {
                 continue;
             }
             if (text[0] == '\t') {
                 std::cout << "ERROR TAB!!!!!";
                 std::cin.get();
             }
+            f.clear();
         }
         should_nextline = true;
         DEBUG_MSG("Text we have: " << text << "\n");
@@ -416,7 +442,7 @@ result_and_if_nextline_and_exits eval_block(std::ifstream& f, char* const buffer
         else if (str_equal(text, "if ", 3)) {
             int expr = eval_math(text + 2, var_handler, f).value;
             if (expr) {
-                auto extract = eval_block(f, buffer, indent + space_per_indent, var_handler);
+                auto extract = eval_block(f, buffer, indent + space_per_indent, var_handler, true);
                 should_nextline = extract.should_nextline;
                 if (extract.exits > 0) {
                     return { 0, false, extract.exits - 1 };
@@ -432,17 +458,12 @@ result_and_if_nextline_and_exits eval_block(std::ifstream& f, char* const buffer
             while (true) {
                 if (eval_math(while_buffer + 5, var_handler, f).value) {
 
-                    eval_block(f, buffer, indent + space_per_indent, var_handler);
+                    eval_block(f, buffer, indent + space_per_indent, var_handler, true);
+                    f.clear();
                     f.seekg(start);
+                    
                 }
                 else {
-                    break;
-                }
-            }
-            // go to after while statement
-            while (true) {
-                f.getline(buffer, SIZE);
-                if (str_equal(text + space_per_indent, ".", 1)) {
                     break;
                 }
             }
@@ -485,7 +506,7 @@ int main()
     //if (til_right_char <'(', ')'>("(12()34((45 + 2))56)") != 19) { throw std::invalid_argument("til_right_char does not work"); }
 
     std::ifstream f;
-    f.open("code.kal");
+    f.open("code3.kal");
     
     char buffer[SIZE];
 

@@ -1,0 +1,22 @@
+
+a = (4+53*(549*3+65+(0+0))*23+(54*(2+(54*22))*(93+11)))+(34) + 34*2+5 + 3*5+3*3 + 54+3 * 4 * 2
+
+say (a)
+
+say "more less than stuff"
+
+n = 2
+
+b = n * n * 3
+
+say (b)
+
+def func(param)
+    return param + 1
+
+say "function testing"
+
+c = n + func(3)
+
+say "c: " (c)
+say "asd"
