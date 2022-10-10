@@ -7,6 +7,7 @@
 
 void Testing::do_tests()
 {
+
 	// Util
 	{ // Util::extract_num
 		auto e = Util::extract_num("348938");

@@ -3,6 +3,8 @@
 constexpr long long SIZE = 128;
 constexpr int space_per_indent = 4;
 
+constexpr int MAX_FUNC_PARAMS = 8;
+
 struct Value_And_Length {
     int value;
     int length;

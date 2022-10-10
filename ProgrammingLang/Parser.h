@@ -96,17 +96,40 @@ Value_And_Length Parser::eval_math(const char* const buffer, Scope& scope, int r
                 auto extracted = Name_Util::extract_name(buffer + i);
                 int after_name = i + extracted.length;
                 if (buffer[after_name] == '(') { // FUNCTION
+
                     auto start = _f.tellg();
-                    Func func = _funcs.get_func(extracted.name);
-                    auto arg_extract = eval_math<>(buffer + after_name, scope);
-                    _f.seekg(func.pos);
+                    const Func& func = _funcs.get_func(extracted.name);
+                    Scope new_scope;
+                    
+                    int args_length = 1;
+
+                    if (buffer[after_name + 1] != ')') { // there are args
+                        args_length = 0;
+                        int arg_index = 0;
+                        while (true) {
+                            if (buffer[after_name + args_length] == ')') {
+                                break;
+                            }
+                            else if (buffer[after_name + args_length] == '(' || buffer[after_name + args_length] == ',') {
+
+                                auto arg_extract = eval_math<>(buffer + after_name + args_length, scope);
+
+                                args_length += arg_extract.length;
+                                // add var
+                                new_scope.add_var(func.param_names[arg_index], arg_extract.value);
+                                ++arg_index;
+                            }
+                            else {
+                                ++arg_index;
+                            }
+                        }
+                    }
 
                     char new_buffer[SIZE];
-                    Scope new_var_handler;
-                    new_var_handler.add_var(func.param_name, arg_extract.value);
-                    direct_value = eval_block(new_buffer, space_per_indent, new_var_handler, true).result;
+                    _f.seekg(func.pos);
+                    direct_value = eval_block(new_buffer, space_per_indent, new_scope, true).result;
 
-                    i += extracted.length + arg_extract.length + 1;
+                    i += extracted.length + args_length + 1;
 
                     _f.seekg(start);
                 }

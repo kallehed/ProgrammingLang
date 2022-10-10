@@ -143,6 +143,7 @@
     <None Include="code.kal" />
     <None Include="code2.kal" />
     <None Include="code3.kal" />
+    <None Include="params.kal" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Funcs.h" />

@@ -3,6 +3,7 @@
 
 int main()
 {
+
     Testing::do_tests();
 
     Parser p;

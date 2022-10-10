@@ -53,6 +53,9 @@
     <None Include="code3.kal">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="params.kal">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.h">

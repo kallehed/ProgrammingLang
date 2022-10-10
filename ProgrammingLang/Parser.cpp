@@ -123,16 +123,27 @@ Result_And_If_Nextline_And_Exits Parser::eval_block(char* const buffer, int inde
             const char* place = text + 4;
             auto def_extract = Name_Util::extract_name(place);
             place += def_extract.length;
-            Name param_name;
-            while (true) {
-                if (Util::legal_name_char(place[0])) {
-                    auto param_extract = Name_Util::extract_name(place);
-                    param_name = param_extract.name;
+
+            std::array<Name, MAX_FUNC_PARAMS> param_names;
+            Func::reset_names(param_names);
+
+            int name_index = 0;
+
+            while (true) { // register all names
+                if (place[0] == '\0') {
                     break;
                 }
-                ++place;
+                else if (Util::legal_name_char(place[0])) {
+                    auto extract = Name_Util::extract_name(place);
+                    param_names[name_index] = extract.name;
+                    ++name_index;
+                    place += extract.length;
+                }
+                else {
+                    ++place;
+                }
             }
-            _funcs.add_func(def_extract.name, param_name, _f.tellg());
+            _funcs.add_func(def_extract.name, param_names, _f.tellg());
         }
         else if (Util::str_equal(text, "return ", 7)) {
             int exits = indent / space_per_indent - 1;

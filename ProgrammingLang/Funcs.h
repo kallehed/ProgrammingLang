@@ -2,10 +2,13 @@
 #include <unordered_map>
 
 #include "Name.h"
+#include "misc.h"
 
 struct Func {
-    Name param_name;
+    std::array<Name, MAX_FUNC_PARAMS> param_names;
     std::streampos pos;
+
+    static void reset_names(std::array<Name, MAX_FUNC_PARAMS>& names);
 };
 
 class Funcs
@@ -18,8 +21,8 @@ public:
 
     Funcs() = default;
 
-    void add_func(Name name, Name param_name, std::streampos pos);
+    void add_func(Name name, std::array<Name, MAX_FUNC_PARAMS> param_names, std::streampos pos);
 
-    Func get_func(Name name);
+    const Func& get_func(Name name);
 };
 

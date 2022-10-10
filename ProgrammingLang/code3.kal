@@ -21,4 +21,4 @@ def primes(total)
             say "PRIME NUMBER: " (i)
         i = i + 1
 
-say (primes(100))
+say (primes(10000))
