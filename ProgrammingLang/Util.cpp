@@ -10,36 +10,34 @@ int Util::ipow(int a, int b) {
 }
 
 // starts at [1]
-int Util::len_to_char(const char* const text, char looking_for) {
-    int i = 1;
+int Util::where_is_char(Where w, char looking_for) {
     while (true) {
-        if (text[i] == looking_for) {
-            return i;
+        ++w;
+        if (code[w] == looking_for) {
+            return w;
         }
-        ++i;
     }
 }
 
 bool Util::is_num(char possible_num) { return possible_num >= '0' && possible_num <= '9'; }
 
-// first assumed to be correct
-int Util::len_while_condition(const char* const text, bool (*cond)(char)) {
-    int i = 1;
-    while (cond(text[i])) {
-        ++i;
+// first assumed to be correct, returns where condition is NOT true first.
+Where Util::where_while_condition(Where w, bool (*cond)(char)) {
+    while (cond(code[w])) {
+        ++w;
     }
-    return i;
+    return w;
 }
 
 // we know the first char is a num
-Value_And_Length Util::extract_num(const char* const text)
+Value_And_Where Util::extract_num(Where w)
 {
-    int length = Util::len_while_condition(text, &Util::is_num);
+    int end_w = Util::where_while_condition(w, &Util::is_num);
     int val = 0;
-    for (int i = 0; i < length; ++i) {
-        val += (text[i] - '0') * Util::ipow(10, length - i - 1);
+    for (; w < end_w; ++w) {
+        val += (code[w] - '0') * Util::ipow(10, end_w - w - 1);
     }
-    return { val, length };
+    return { val, end_w };
 }
 
 bool Util::legal_name_char(char c) { return (c >= 'A' && c <= 'z'); }

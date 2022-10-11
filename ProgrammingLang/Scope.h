@@ -21,5 +21,5 @@ public:
     void set_value(Name name, int value);
 
     // get from text
-    Value_And_Length get_var_value(const char* const text);
+    Value_And_Where get_var_value(Where w);
 };

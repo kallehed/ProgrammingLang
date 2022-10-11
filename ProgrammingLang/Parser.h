@@ -9,151 +9,150 @@
 
 class Parser
 {
-    std::ifstream _f;
     Funcs _funcs;
 
-	// returns value and length of expression, ASSUMES buffer starts with '(' OR "CHARACTER NOT IMPORTANT TO EXPRESSION". Priority determines whether to stop att UN-priotirized like + or -
+	// returns value and AFTER where expression ends, ASSUMES buffer starts with '(' OR "CHARACTER NOT IMPORTANT TO EXPRESSION". Priority determines whether to stop att UN-priotirized like + or -.
 	template <bool priority = false>
-    Value_And_Length eval_math(const char* const buffer, Scope& scope, int result = 0);
+    Value_And_Where eval_math(Where w, Scope& scope, int result = 0);
 
-    void say(const char* const text, Scope& scope);
+    void say(Where w, Scope& scope);
 
-    // [0] is part of name and not checked
-    void set_var(const char* const text, Scope& scope);
+    // [0] is part of name and not checked. Parses EX: "kalle = 232"
+    void set_var(Where w, Scope& scope);
 
-    Result_And_If_Nextline_And_Exits eval_block(char* const buffer, int indent, Scope& scope, const bool checkfile);
+    // assumes to start ON line, NOT BEFORE: \nHERE
+    Result_And_Exit eval_block(Where w, const int indent, Scope& scope);
 
 public:
     Parser() = default;
     void start(const char* const file_path);
 };
 
-
-
-// returns value and length of expression, ASSUMES buffer starts with '(' OR "CHARACTER NOT IMPORTANT TO EXPRESSION". Priority determines whether to stop att UN-priotirized like + or -
 template <bool priority>
-Value_And_Length Parser::eval_math(const char* const buffer, Scope& scope, int result)
+Value_And_Where Parser::eval_math(Where w, Scope& scope, int result)
 {
     OPER::_ oper = OPER::PLUS;
-    int i = 1;
+    ++w;
     while (true) {
-        switch (buffer[i]) {
+        switch (code[w]) {
         case ' ':
-            ++i;
+            ++w;
             break;
         case '(':
         {
-            auto [value, len] = eval_math<>(buffer + i, scope);
-            i += len + 1;
-            result = use_oper(oper, result, value);
+            auto extract = eval_math<>(w, scope);
+            w = extract._w;
+            result = use_oper(oper, result, extract._value);
             break;
         }
         case ')':
-            goto END_OF_EVAL_MATH; // TODO: FIX THIS ORDERING
-            ++i;
+            ++w;
+            goto END_OF_EVAL_MATH;
+            break;
         case '*':
             oper = OPER::MULT;
-            ++i;
+            ++w;
             break;
         case '+':
-            if constexpr (priority) { return { result, i }; }
-            ++i;
+            
             oper = OPER::PLUS;
-
+            ++w;
+            if constexpr (priority) { goto END_OF_EVAL_MATH; }
             break;
         case '>':
             oper = OPER::MORE_THAN;
-            ++i;
+            ++w;
             break;
         case '<':
             oper = OPER::LESS_THAN;
-            ++i;
+            ++w;
             break;
         case '-':
-            if constexpr (priority) { return { result, i }; }
-            ++i;
+            
             oper = OPER::MINUS;
+            ++w;
+            if constexpr (priority) { goto END_OF_EVAL_MATH; }
             break;
         case '%':
             oper = OPER::MOD;
-            ++i;
+            ++w;
             break;
         case '=':
             oper = OPER::EQUAL;
-            ++i;
+            ++w;
             break;
         default:
-            int direct_value;
-            if (Util::is_num(buffer[i])) { // is number
-                auto extracted = Util::extract_num(buffer + i);
-                DEBUG_MSG("IS NUM!!! " << " num: " << extracted.value << "\n");
-                i += extracted.length;
 
-                direct_value = extracted.value;
+            // Direct value, is next value, EX: 2, (...), func(...), 42
+            // w should be set to char directly after this expression
+
+            int direct_value; // value which appeared first, will then be subjected to looking forward from
+            if (Util::is_num(code[w])) { // is number
+                auto extracted = Util::extract_num(w);
+                DEBUG_MSG("IS NUM!!! " << " num: " << extracted._value << "\n");
+                w = extracted._w;
+
+                direct_value = extracted._value;
             }
-            else if (Util::legal_name_char(buffer[i])) {
+            else if (Util::legal_name_char(code[w])) {
                 // it is a variable OR FUNCTION
-                auto extracted = Name_Util::extract_name(buffer + i);
-                int after_name = i + extracted.length;
-                if (buffer[after_name] == '(') { // FUNCTION
+                auto extr_name = Name_Util::extract_name(w);
+                w = extr_name._w; // now set to after name
+                if (code[w] == '(') { // FUNCTION, this will put w AFTER function ...(...)HERE
 
-                    auto start = _f.tellg();
-                    const Func& func = _funcs.get_func(extracted.name);
-                    Scope new_scope;
-                    
-                    int args_length = 1;
+                    Func& func = _funcs.get_func(extr_name._name);
 
-                    if (buffer[after_name + 1] != ')') { // there are args
-                        args_length = 0;
-                        int arg_index = 0;
-                        while (true) {
-                            if (buffer[after_name + args_length] == ')') {
+                    if (code[w + 1] != ')') // there are args
+                    { 
+                        // what parameter we are on
+                        int param = 0;
+                        while (true) { // get all arguments
+                            if (code[w] == ')') {
+                                ++w; // go to 
                                 break;
                             }
-                            else if (buffer[after_name + args_length] == '(' || buffer[after_name + args_length] == ',') {
+                            else if (code[w] == '(' || code[w] == ',')
+                            {
+                                auto arg_extract = eval_math<>(w, scope);
 
-                                auto arg_extract = eval_math<>(buffer + after_name + args_length, scope);
-
-                                args_length += arg_extract.length;
+                                w = arg_extract._w;
                                 // add var
-                                new_scope.add_var(func.param_names[arg_index], arg_extract.value);
-                                ++arg_index;
+                                func._scope.set_value(func._param_names[param], arg_extract._value);
+                                ++param;
                             }
                             else {
-                                ++arg_index;
+                                ++w;
                             }
                         }
                     }
+                    else {
+                        // no params, so w is set to after ...()HERE
+                        w += 2;
+                    }
 
-                    char new_buffer[SIZE];
-                    _f.seekg(func.pos);
-                    direct_value = eval_block(new_buffer, space_per_indent, new_scope, true).result;
-
-                    i += extracted.length + args_length + 1;
-
-                    _f.seekg(start);
+                    direct_value = eval_block(func._w, space_per_indent, func._scope)._result;
                 }
-                else { // Variable
-                    direct_value = scope.get_value(extracted.name);
-                    i += extracted.length;
+                else { // Variable, just set to that value. w already handled
+                    direct_value = scope.get_value(extr_name._name);
                 }
             }
             else { // NO LEGAL CHARACTER AT ALL, QUIT
-                DEBUG_MSG("ILLEGAL CHAR: " << buffer[i] << '\n');
+                DEBUG_MSG("ILLEGAL CHAR: " << code[w] << '\n');
+                ++w;
                 goto END_OF_EVAL_MATH;
             }
 
             // look forward after direct value, possibly apply priority
-            auto new_extract = eval_math<true>(buffer + i - 1, scope, direct_value);
-            i += new_extract.length - 1; // minus 1
-            result = use_oper(oper, result, new_extract.value);
+            auto new_extract = eval_math<true>(w - 1, scope, direct_value);
+            w = new_extract._w - 1;
+            result = use_oper(oper, result, new_extract._value);
 
             break;
         }
     }
 END_OF_EVAL_MATH:
     DEBUG_MSG("TOTAL: " << result << "\n");
-    return { result, i };
+    return { result, w };
 }
 
 

@@ -1,69 +1,66 @@
 #include "Parser.h"
 
-void Parser::say(const char* const text, Scope& scope)
+void Parser::say(Where w, Scope& scope)
 {
-    int i = 0;
     while (true) {
-        switch (text[i]) {
+        switch (code[w]) {
+        case '\n':
         case '\0':
             std::cout << '\n';
             return;
         case '\"':
-            i += Io::print_string(text + i);
+            w = Io::print_string(w);
             break;
         case '(':
         {
             DEBUG_MSG("You said following expression: ");
-            auto [value, length] = eval_math(text + i, scope);
-            std::cout << value;
+            auto extract= eval_math(w, scope);
+            std::cout << extract._value;
             DEBUG_MSG('\n');
-            i += length;
+            w = extract._w;
             break;
         }
         }
-        ++i;
+        ++w;
     }
 }
 
-void Parser::set_var(const char* const text, Scope& scope)
+void Parser::set_var(Where w, Scope& scope)
 {
-    auto [name, length] = Name_Util::extract_name(text);
+    auto extract_name = Name_Util::extract_name(w);
 
-    if (Util::str_equal(text + length, " =", 2)) {
-        auto [value, len] = eval_math(text + length + 1, scope);
-        scope.set_value(name, value);
+    if (Util::str_equal(code + extract_name._w, " =", 2)) {
+        auto extract_math = eval_math(extract_name._w + 1, scope);
+        scope.set_value(extract_name._name, extract_math._value);
 
-        Io::print_var_details(name, scope);
+        Io::print_var_details(extract_name._name, scope);
     }
     else {
-        throw std::invalid_argument("Wrong semantics very bad");
+        throw std::invalid_argument("Wrong semantics very bad, Setting variable incorrect");
     }
 }
 
-Result_And_If_Nextline_And_Exits Parser::eval_block(char* const buffer, int indent, Scope& scope, const bool checkfile)
+Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
 {
-    bool should_nextline = true;
-    const char* const text = (const char* const)(buffer + indent);
-    while (!checkfile || _f.good()) {
-        int len_of_line = 0;
-        int i = 0;
-        if (should_nextline) {
-            _f.getline(buffer, SIZE);
+    while (true)
+    {
+        // where /n is
+        if (code[w] == '\0') { return { 0, false }; }
+        const Where end_of_line = Util::where_is_char(w - 1, '\n');
+        const Where next_line_begins = end_of_line + 1;
+        const int line_length = end_of_line - w;
 
-            len_of_line = Util::len_to_char(buffer - 1, '\0');
-            if (len_of_line - 1 <= indent) {
-                continue;
-            }
-            if (text[0] == '\t') {
-                std::cout << "ERROR TAB!!!!!";
-                std::cin.get();
-            }
-            _f.clear();
-        }
-        should_nextline = true;
-        DEBUG_MSG("Text we have: " << text << "\n");
+        w += indent;
+            //if (len_of_line - 1 <= indent) {
+            //    continue;
+            //}
+            //if (code[0] == '\t') {
+            //    std::cout << "ERROR TAB!!!!!";
+            //    std::cin.get();
+            //}
+        //DEBUG_MSG("Text we have: " << code[w] << "\n");
 
-        { // check line for other indentation IN PREVIOUS indents
+        /* { // check line for other indentation IN PREVIOUS indents
             int i = 0;
             while (i + 1 < len_of_line && i < indent) {
                 if (buffer[i] != ' ') {
@@ -72,57 +69,50 @@ Result_And_If_Nextline_And_Exits Parser::eval_block(char* const buffer, int inde
                 }
                 i += space_per_indent;
             }
-        }
+        }*/
 
-        if (Util::str_equal(text, "#", 1)) {
+        if (Util::str_equal(code + w, "#", 1)) {
             // ignore line
         }
-        else if (Util::str_equal(text, "say ", 4)) {
+        else if (Util::str_equal(code + w, "say ", 4))
+        {
             DEBUG_MSG("say stuff\n");
-            say(text + 4, scope);
+            say(w + 4, scope);
         }
-        else if (Util::str_equal(text, "if ", 3)) {
-            int expr = eval_math(text + 2, scope).value;
+        else if (Util::str_equal(code + w, "if ", 3))
+        {
+            int expr = eval_math<>(w + 2, scope)._value;
             if (expr) {
-                auto extract = eval_block(buffer, indent + space_per_indent, scope, true);
-                should_nextline = extract.should_nextline;
-                if (extract.exits > 0) {
-                    return { extract.result, false, extract.exits - 1 };
+                auto extract = eval_block(end_of_line + 1, indent + space_per_indent, scope);
+                if (extract._exit) {
+                    return { extract._result, extract._exit };
                 }
             }
         }
-        else if (Util::str_equal(text, "while ", 6)) {
-            std::streampos start = _f.tellg();
-            char while_buffer[SIZE];
-            for (int i = 0; i < SIZE; ++i) {
-                while_buffer[i] = text[i];
-            }
-            while (true) {
-                if (eval_math(while_buffer + 5, scope).value) {
+        else if (Util::str_equal(code + w, "while ", 6))
+        {
+            w += 5; // w set to: whileHERE
+            while (true) { //
+                if (eval_math<>(w, scope)._value) {
 
-                    auto extract = eval_block(buffer, indent + space_per_indent, scope, true);
-                    _f.clear();
-                    //if (extract.exits > 0) {
-                    //    return { extract.result, true, extract.exits - 1 };
-                    //}
-                    _f.seekg(start);
-
+                    auto extract = eval_block(end_of_line + 1, indent + space_per_indent, scope);
+                    if (extract._exit) {
+                        return { extract._result, true };
+                    }
                 }
                 else {
                     break;
                 }
             }
         }
-        else if (Util::str_equal(text, ".", 1)) {
-            DEBUG_MSG("breakout!");
-            return { 0, true, 0 };
-        }
-        else if (Util::str_equal(text, "def ", 4)) {
+        else if (Util::str_equal(code + w, "def ", 4))
+        {
             DEBUG_MSG("Creating function!\n");
 
-            const char* place = text + 4;
-            auto def_extract = Name_Util::extract_name(place);
-            place += def_extract.length;
+            //const char* place = text + 4;
+            w += 4; // should be at: def HERE, at beginning of name
+            auto def_extract = Name_Util::extract_name(w);
+            w = def_extract._w;
 
             std::array<Name, MAX_FUNC_PARAMS> param_names;
             Func::reset_names(param_names);
@@ -130,30 +120,34 @@ Result_And_If_Nextline_And_Exits Parser::eval_block(char* const buffer, int inde
             int name_index = 0;
 
             while (true) { // register all names
-                if (place[0] == '\0') {
+                if (code[w] == '\n') {
                     break;
                 }
-                else if (Util::legal_name_char(place[0])) {
-                    auto extract = Name_Util::extract_name(place);
-                    param_names[name_index] = extract.name;
+                else if (Util::legal_name_char(code[w]))
+                {
+                    auto extract = Name_Util::extract_name(w);
+                    param_names[name_index] = extract._name;
                     ++name_index;
-                    place += extract.length;
+                    w = extract._w;
                 }
                 else {
-                    ++place;
+                    ++w;
                 }
             }
-            _funcs.add_func(def_extract.name, param_names, _f.tellg());
+            _funcs.add_func(def_extract._name, param_names, next_line_begins);
         }
-        else if (Util::str_equal(text, "return ", 7)) {
-            int exits = indent / space_per_indent - 1;
-            return { eval_math(text + 6, scope).value, true, exits};
+        else if (Util::str_equal(code + w, "return ", 7)) // should exit all until finding math expression
+        { 
+            w += 6; // w set to returnHERE
+            return { eval_math(w, scope)._value, true}; 
         }
-        else if (Util::legal_name_char(text[0])) { // variable set to something
-            set_var(text, scope);
+        else if (Util::legal_name_char(code[w])) { // variable set to something
+            set_var(w, scope);
         }
+
+        w = next_line_begins; // set to next line
     }
-    return { 0 , false, 0 };
+    return { 0 , false };
 }
 
 void Parser::start(const char * const file_path)
@@ -162,18 +156,20 @@ void Parser::start(const char * const file_path)
 
     //if (til_right_char <'(', ')'>("(12()34((45 + 2))56)") != 19) { throw std::invalid_argument("til_right_char does not work"); }
 
-    _f.open(file_path);
+    std::ifstream f;
 
-    char buffer[SIZE];
+    f.open(file_path);
 
-    Scope scope;
-
-    if (_f.is_open())
+    if (f.is_open())
     {
-        eval_block(buffer, 0, scope, true);
+        f.getline(code, MAX_CODE_LEN, '\0');
+        if (f.fail()) { std::cerr << "FILE TOO LONG ERROR!!!"; }
 
-        //if (_f.fail()) { std::cerr << "FAIL!!!!!"; }
-        _f.close(); // Close input ffile
+        Scope scope;
+
+        eval_block(0, 0, scope);
+
+        f.close(); // Close input ffile
     }
     else { //Error message
         std::cerr << "ERROR: Can't find input file " << std::endl;

@@ -18,9 +18,9 @@ void Scope::set_value(Name name, int value) {
     _vars[name] = value;
 }
 
-Value_And_Length Scope::get_var_value(const char* const text)
+Value_And_Where Scope::get_var_value(Where w)
 {
-    auto [name, length] = Name_Util::extract_name(text);
-    int value = this->get_value(name);
-    return { value, length };
+    auto extract = Name_Util::extract_name(w);
+    int value = this->get_value(extract._name);
+    return { value, extract._w };
 }

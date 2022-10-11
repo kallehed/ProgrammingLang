@@ -1,11 +1,16 @@
 #include "Funcs.h"
 
-void Funcs::add_func(Name name, std::array<Name, MAX_FUNC_PARAMS> param_names, std::streampos pos)
+void Funcs::add_func(Name name, std::array<Name, MAX_FUNC_PARAMS> param_names, Where w)
 {
-    _funcs.insert({ name, {param_names, pos} });
+    Func f;
+    f._param_names = param_names;
+    f._w = w;
+    f._scope;
+    //_funcs.insert({ name , {name, param_names} });
+    _funcs[name] = f;
 }
 
-const Func& Funcs::get_func(Name name) {
+Func& Funcs::get_func(Name name) {
     if (_funcs.find(name) == _funcs.end()) {
         for (;;) {}
     }

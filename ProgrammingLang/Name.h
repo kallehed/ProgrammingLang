@@ -2,6 +2,8 @@
 #include <array>
 #include <cstdint>
 
+#include "misc.h"
+
 struct Name {
     union {
         std::array<char, 8> chars;
@@ -19,13 +21,13 @@ struct Name {
     
 };
 
-struct Name_And_Length {
-    Name name;
-    int length;
+struct Name_And_Where {
+    Name _name;
+    Where _w;
 };
 
 namespace Name_Util {
-    // assume first character is FIRST OF VAR
-    Name_And_Length extract_name(const char* const text);
+    // assume first character is FIRST OF VAR, returns where NOT name
+    Name_And_Where extract_name(Where w);
 }
 

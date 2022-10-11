@@ -3,10 +3,14 @@
 
 #include "Name.h"
 #include "misc.h"
+#include "Scope.h"
 
 struct Func {
-    std::array<Name, MAX_FUNC_PARAMS> param_names;
-    std::streampos pos;
+    std::array<Name, MAX_FUNC_PARAMS> _param_names;
+    Where _w;
+
+    // personal scope for function
+    Scope _scope;
 
     static void reset_names(std::array<Name, MAX_FUNC_PARAMS>& names);
 };
@@ -21,8 +25,8 @@ public:
 
     Funcs() = default;
 
-    void add_func(Name name, std::array<Name, MAX_FUNC_PARAMS> param_names, std::streampos pos);
+    void add_func(Name name, std::array<Name, MAX_FUNC_PARAMS> param_names, Where w);
 
-    const Func& get_func(Name name);
+    Func& get_func(Name name);
 };
 
