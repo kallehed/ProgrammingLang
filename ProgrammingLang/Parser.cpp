@@ -20,8 +20,10 @@ void Parser::say(Where w, Scope& scope)
             w = extract._w;
             break;
         }
+        default:
+            ++w;
+            break;
         }
-        ++w;
     }
 }
 
@@ -44,32 +46,46 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
 {
     while (true)
     {
-        // where /n is
+        
         if (code[w] == '\0') { return { 0, false }; }
+        // where /n is
         const Where end_of_line = Util::where_is_char(w - 1, '\n');
         const Where next_line_begins = end_of_line + 1;
         const int line_length = end_of_line - w;
 
-        w += indent;
-            //if (len_of_line - 1 <= indent) {
-            //    continue;
-            //}
-            //if (code[0] == '\t') {
-            //    std::cout << "ERROR TAB!!!!!";
-            //    std::cin.get();
-            //}
-        //DEBUG_MSG("Text we have: " << code[w] << "\n");
+        // print line
+#if _DEBUG
+        { std::cout << "Early Line: "; Io::print_x_chars_of(code + w, line_length); std::cout << "\n"; }
+#endif
 
-        /* { // check line for other indentation IN PREVIOUS indents
-            int i = 0;
-            while (i + 1 < len_of_line && i < indent) {
-                if (buffer[i] != ' ') {
-                    int exits = (indent - i) / space_per_indent - 1;
-                    return { 0, false, exits };
+        // search line
+        {
+            int search_indent = 0;
+            while (true) {
+                // if indent 0, don't check this. If indent 4, check only first indent for non ' ' chars.
+                // ALSO, if the line length is 4, we don't want search indent of 4 to check out of boundary
+                if (search_indent >= indent || search_indent >= line_length) { 
+                    //goto GOTO_NEXT_LINE;
+                    break;
                 }
-                i += space_per_indent;
+                if (code[w + search_indent] != ' ') {
+                    DEBUG_MSG("Exiting from line\n");
+                    return { 0, false };
+                }
+                search_indent += space_per_indent;
             }
-        }*/
+        }
+
+        //if (line_length < indent - 30) {
+        //    goto GOTO_NEXT_LINE;
+        //}
+
+        w += indent;
+
+        // print line
+#if _DEBUG
+        { std::cout << "Line: "; Io::print_x_chars_of(code + w, line_length - indent); std::cout << "\n"; }
+#endif
 
         if (Util::str_equal(code + w, "#", 1)) {
             // ignore line
@@ -145,6 +161,8 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
             set_var(w, scope);
         }
 
+        GOTO_NEXT_LINE:
+
         w = next_line_begins; // set to next line
     }
     return { 0 , false };
@@ -162,16 +180,38 @@ void Parser::start(const char * const file_path)
 
     if (f.is_open())
     {
-        f.getline(code, MAX_CODE_LEN, '\0');
-        if (f.fail()) { std::cerr << "FILE TOO LONG ERROR!!!"; }
+        f.getline(code, MAX_CODE_LEN - 1, '\0');
+        if (f.fail()) { std::cerr << "FILE TOO LONG(Probably) ERROR!!!"; goto GOTO_CLOSE_FILE; }
 
-        Scope scope;
+        // check for tabs
+        {
+            for (int i = 0; i < MAX_CODE_LEN - 1; ++i) {
+                if (code[i] == '\t') {
+                    std::cerr << "TAB TAB TAB TAB TAB!!!! AHH TAAAAAAAAAAAAAAB!! ERROR!";
+                    goto GOTO_CLOSE_FILE;
+                }
+            }
+        }
 
-        eval_block(0, 0, scope);
+        {
+            { // put empty newline at end
+                Where file_end = Util::where_is_char(-1, '\0');
 
+                code[file_end] = '\n';
+                code[file_end + 1] = '\0';
+            }
+
+            Scope scope;
+
+            eval_block(0, 0, scope);
+        }
+
+        GOTO_CLOSE_FILE:
         f.close(); // Close input ffile
     }
     else { //Error message
         std::cerr << "ERROR: Can't find input file " << std::endl;
     }
+
+    f.close();
 }
