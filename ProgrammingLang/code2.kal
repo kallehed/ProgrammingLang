@@ -1,13 +1,17 @@
 
-say "first"
-x = 30
-if x > 2
-    say "1"
-    if x > 1
-        say "2"
-        if x > (-4)
-            say "3"
+def isPrime(n)
+    i = 2
+    while i < n
+        if (n % i) = 0
+            return 0
+        i = i + 1
+    return 1
 
-        say "4"
-    say "5"
-say "6"
+def primes(n)
+    i = 0
+    while i < n
+        if isPrime(i)
+            say (i) " is prime!"
+        i = i + 1
+¨
+say (primes(100000))

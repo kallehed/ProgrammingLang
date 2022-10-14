@@ -76,9 +76,9 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
             }
         }
 
-        //if (line_length < indent - 30) {
-        //    goto GOTO_NEXT_LINE;
-        //}
+        if (line_length < indent) {
+            goto GOTO_NEXT_LINE;
+        }
 
         w += indent;
 
@@ -90,6 +90,11 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
         if (Util::str_equal(code + w, "#", 1)) {
             // ignore line
         }
+#if _DEBUG
+        else if (code[w] == '¨') { // breakpoint
+            std::cout << "BREAKPOINT HIT!\n";
+        }
+#endif
         else if (Util::str_equal(code + w, "say ", 4))
         {
             DEBUG_MSG("say stuff\n");

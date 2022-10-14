@@ -115,7 +115,7 @@ Value_And_Where Parser::eval_math(Where w, Scope& scope, int result)
                             {
                                 auto arg_extract = eval_math<>(w, scope);
 
-                                w = arg_extract._w;
+                                w = arg_extract._w - 1;
                                 // add var
                                 func._scope.set_value(func._param_names[param], arg_extract._value);
                                 ++param;
@@ -138,7 +138,8 @@ Value_And_Where Parser::eval_math(Where w, Scope& scope, int result)
             }
             else { // NO LEGAL CHARACTER AT ALL, QUIT
                 DEBUG_MSG("ILLEGAL CHAR: " << code[w] << '\n');
-                ++w;
+                if constexpr (priority) { ++w; }
+                //++w; // will cause expression to return 1+1\n after newline, one character too far.
                 goto END_OF_EVAL_MATH;
             }
 
