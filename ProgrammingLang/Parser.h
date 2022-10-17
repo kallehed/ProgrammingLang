@@ -46,6 +46,7 @@ Value_And_Where Parser::eval_math(Where w, Scope& scope, int result)
             break;
         }
         case ')':
+            if constexpr (priority) { goto END_OF_EVAL_MATH; }
             ++w;
             goto END_OF_EVAL_MATH;
             break;
@@ -54,10 +55,9 @@ Value_And_Where Parser::eval_math(Where w, Scope& scope, int result)
             ++w;
             break;
         case '+':
-            
+            if constexpr (priority) { goto END_OF_EVAL_MATH; }
             oper = OPER::PLUS;
             ++w;
-            if constexpr (priority) { goto END_OF_EVAL_MATH; }
             break;
         case '>':
             oper = OPER::MORE_THAN;
@@ -68,10 +68,9 @@ Value_And_Where Parser::eval_math(Where w, Scope& scope, int result)
             ++w;
             break;
         case '-':
-            
+            if constexpr (priority) { goto END_OF_EVAL_MATH; }
             oper = OPER::MINUS;
             ++w;
-            if constexpr (priority) { goto END_OF_EVAL_MATH; }
             break;
         case '%':
             oper = OPER::MOD;
@@ -138,14 +137,12 @@ Value_And_Where Parser::eval_math(Where w, Scope& scope, int result)
             }
             else { // NO LEGAL CHARACTER AT ALL, QUIT
                 DEBUG_MSG("ILLEGAL CHAR: " << code[w] << '\n');
-                if constexpr (priority) { ++w; }
-                //++w; // will cause expression to return 1+1\n after newline, one character too far.
                 goto END_OF_EVAL_MATH;
             }
 
             // look forward after direct value, possibly apply priority
             auto new_extract = eval_math<true>(w - 1, scope, direct_value);
-            w = new_extract._w - 1;
+            w = new_extract._w;
             result = use_oper(oper, result, new_extract._value);
 
             break;

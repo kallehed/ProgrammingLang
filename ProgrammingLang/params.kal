@@ -19,3 +19,4 @@ def saynum(num, times)
     return num*times
 
 say (saynum(420, 3) * 2)
+say "correct: " (420*6)

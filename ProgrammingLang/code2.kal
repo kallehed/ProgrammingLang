@@ -11,7 +11,7 @@ def primes(n)
     i = 0
     while i < n
         if isPrime(i)
-            say (i) " is prime!"
+            say (i) " is primey!"
         i = i + 1
 ¨
 say (primes(100000))
