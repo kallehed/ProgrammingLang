@@ -9,5 +9,5 @@ int main()
     Testing::do_tests();
 
     Parser p;
-    p.start("code2.kal");
+    p.start("code3.kal");
 }

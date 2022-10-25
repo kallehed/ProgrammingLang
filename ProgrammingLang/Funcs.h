@@ -7,7 +7,7 @@
 
 struct Func {
     std::array<Name, MAX_FUNC_PARAMS> _param_names;
-    Where _w;
+    int _line;
 
     // personal scope for function
     Scope _scope;
@@ -25,7 +25,7 @@ public:
 
     Funcs() = default;
 
-    void add_func(Name name, std::array<Name, MAX_FUNC_PARAMS> param_names, Where w);
+    void add_func(Name name, std::array<Name, MAX_FUNC_PARAMS> param_names, int line);
 
     Func& get_func(Name name);
 };

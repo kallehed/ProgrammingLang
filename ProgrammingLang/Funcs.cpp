@@ -1,10 +1,10 @@
 #include "Funcs.h"
 
-void Funcs::add_func(Name name, std::array<Name, MAX_FUNC_PARAMS> param_names, Where w)
+void Funcs::add_func(Name name, std::array<Name, MAX_FUNC_PARAMS> param_names, int line)
 {
     Func f;
     f._param_names = param_names;
-    f._w = w;
+    f._line = line;
     f._scope;
     //_funcs.insert({ name , {name, param_names} });
     _funcs[name] = f;

@@ -29,7 +29,7 @@ private:
     void set_var(Where w, Scope& scope);
 
     // assumes to start ON line, NOT BEFORE: \nHERE
-    Result_And_Exit eval_block(Where w, const int indent, Scope& scope);
+    Result_And_Exit eval_block(const int line, Scope& scope);
 };
 
 template <bool priority>
@@ -133,7 +133,7 @@ Value_And_Where Parser::eval_math(Where w, Scope& scope, int result)
                         w += 2;
                     }
 
-                    direct_value = eval_block(func._w, SPACE_PER_INDENT, func._scope)._result;
+                    direct_value = eval_block(func._line, func._scope)._result;
                 }
                 else { // Variable, just set to that value. w already handled
                     direct_value = scope.get_value(extr_name._name);

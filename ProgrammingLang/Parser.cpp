@@ -42,48 +42,19 @@ void Parser::set_var(Where w, Scope& scope)
     }
 }
 
-Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
+Result_And_Exit Parser::eval_block(int line, Scope& scope) // MOST IMPORTANT FUNCTION
 {
-    while (true)
-    {   
+    while (line < _total_lines)
+    {
+        const Where w = _lines[line]._w;
         if (code[w] == '\0') { return { 0, false }; }
         // where /n is
-        const Where end_of_line = Util::where_is_char(w - 1, '\n');
-        const Where next_line_begins = end_of_line + 1;
-        const int line_length = end_of_line - w;
-
-        // print line
-#if _DEBUG
-        { std::cout << "Early Line: "; Io::print_x_chars_of(code + w, line_length); std::cout << "\n"; }
-#endif
-
-        // search line
         {
-            int search_indent = 0;
-            while (true) {
-                // if indent 0, don't check this. If indent 4, check only first indent for non ' ' chars.
-                // ALSO, if the line length is 4, we don't want search indent of 4 to check out of boundary
-                if (search_indent >= indent || search_indent >= line_length) { 
-                    //goto GOTO_NEXT_LINE;
-                    break;
-                }
-                if (code[w + search_indent] != ' ') {
-                    DEBUG_MSG("Exiting from line\n");
-                    return { 0, false };
-                }
-                search_indent += SPACE_PER_INDENT;
-            }
+            int a = 4;
         }
-
-        if (line_length < indent) {
-            goto GOTO_NEXT_LINE;
-        }
-
-        w += indent;
-
         // print line
 #if _DEBUG
-        { std::cout << "Line: "; Io::print_x_chars_of(code + w, line_length - indent); std::cout << "\n"; }
+        { std::cout << "Line: "; Io::print_x_chars_of(code + w, _lines[line + 1]._w - w - 1); std::cout << "\n"; }
 #endif
 
         if (Util::str_equal(code + w, "#", 1)) {
@@ -103,7 +74,7 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
         {
             int expr = eval_math<>(w + 2, scope)._value;
             if (expr) {
-                auto extract = eval_block(next_line_begins, indent + SPACE_PER_INDENT, scope);
+                auto extract = eval_block(line + 1, scope);
                 if (extract._exit) {
                     return { extract._result, extract._exit };
                 }
@@ -111,11 +82,10 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
         }
         else if (Util::str_equal(code + w, "while ", 6))
         {
-            w += 5; // w set to: whileHERE
-            while (true) { //
-                if (eval_math<>(w, scope)._value) {
+            while (true) { 
+                if (eval_math<>(w + 5, scope)._value) { // w set to: whileHERE
 
-                    auto extract = eval_block(next_line_begins, indent + SPACE_PER_INDENT, scope);
+                    auto extract = eval_block(line + 1, scope);
                     if (extract._exit) {
                         return { extract._result, true };
                     }
@@ -129,10 +99,8 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
         {
             DEBUG_MSG("Creating function!\n");
 
-            //const char* place = text + 4;
-            w += 4; // should be at: def HERE, at beginning of name
-            auto def_extract = Name_Util::extract_name(w);
-            w = def_extract._w;
+            auto def_extract = Name_Util::extract_name(w + 4); // should be at: def HERE, at beginning of name
+            Where new_w = def_extract._w;
 
             std::array<Name, MAX_FUNC_PARAMS> param_names;
             Func::reset_names(param_names);
@@ -140,26 +108,25 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
             int name_index = 0;
 
             while (true) { // register all names
-                if (code[w] == '\n') {
+                if (code[new_w] == '\n') {
                     break;
                 }
-                else if (Util::legal_name_char(code[w]))
+                else if (Util::legal_name_char(code[new_w]))
                 {
-                    auto extract = Name_Util::extract_name(w);
+                    auto extract = Name_Util::extract_name(new_w);
                     param_names[name_index] = extract._name;
                     ++name_index;
-                    w = extract._w;
+                    new_w = extract._w;
                 }
                 else {
-                    ++w;
+                    ++new_w;
                 }
             }
-            _funcs.add_func(def_extract._name, param_names, next_line_begins);
+            _funcs.add_func(def_extract._name, param_names, line + 1);
         }
         else if (Util::str_equal(code + w, "return ", 7)) // should exit all until finding math expression
         { 
-            w += 6; // w set to returnHERE
-            return { eval_math(w, scope)._value, true}; 
+            return { eval_math(w + 6, scope)._value, true};  // w set to returnHERE
         }
         else if (Util::legal_name_char(code[w])) { // variable set to something
             set_var(w, scope);
@@ -167,7 +134,7 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
 
         GOTO_NEXT_LINE:
 
-        w = next_line_begins; // set to next line
+        ++line;
     }
     return { 0 , false };
 }
@@ -184,20 +151,20 @@ void Parser::start(const char * const file_path)
 
     if (f.is_open())
     {
-        f.getline(code, MAX_CODE_LEN - 1, '\0');
+        f.getline(code, MAX_CODE_LEN, '\0');
         if (f.fail()) { std::cerr << "FILE TOO LONG(Probably) ERROR!!!"; goto GOTO_CLOSE_FILE; }
 
         // check for tabs, calulate length + indent + where of ALL lines
         {
+            _lines.fill({ -1, -1});
             _lines[0]._w = 0;
             { // things with line
                 int line = 1;
-                for (int i = 0; i < MAX_CODE_LEN - 1; ++i) {
+                for (int i = 0; i < MAX_CODE_LEN; ++i) {
                     switch (code[i]) {
                     case '\0':
                         _lines[line]._w = i + 1;
                         _lines[line]._indent = -1;
-                        ++line;
                         goto GOTO_AFTER_FOR;
                     case '\n':
                         _lines[line]._w = i + 1;
@@ -216,7 +183,10 @@ void Parser::start(const char * const file_path)
                                 goto GOTO_CLOSE_FILE;
                             }
                             else {
-                                _lines[line - 1]._indent = spaces;
+                                _lines[line - 1]._indent = spaces / SPACE_PER_INDENT;
+                                if (spaces > 0) {
+                                    memmove((code + i) - spaces, (code + i), MAX_CODE_LEN - i);
+                                }
                             }
                         }
                         break;
@@ -224,25 +194,13 @@ void Parser::start(const char * const file_path)
                 }
                 GOTO_AFTER_FOR:
                 _total_lines = line;
-                // make rest of lines NOT lines
-                for (int i = line; i < _MAX_LINES; ++i) {
-                    _lines[i]._w = -1;
-                    _lines[i]._indent = -1;
-                }
             }
         }
 
         {
-            { // put empty newline at end
-                Where file_end = Util::where_is_char(-1, '\0');
-
-                code[file_end] = '\n';
-                code[file_end + 1] = '\0';
-            }
-
             Scope scope;
 
-            eval_block(0, 0, scope);
+            eval_block(0, scope);
         }
 
         GOTO_CLOSE_FILE:
