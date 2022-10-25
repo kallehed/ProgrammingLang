@@ -45,8 +45,7 @@ void Parser::set_var(Where w, Scope& scope)
 Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
 {
     while (true)
-    {
-        
+    {   
         if (code[w] == '\0') { return { 0, false }; }
         // where /n is
         const Where end_of_line = Util::where_is_char(w - 1, '\n');
@@ -72,7 +71,7 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
                     DEBUG_MSG("Exiting from line\n");
                     return { 0, false };
                 }
-                search_indent += space_per_indent;
+                search_indent += SPACE_PER_INDENT;
             }
         }
 
@@ -104,7 +103,7 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
         {
             int expr = eval_math<>(w + 2, scope)._value;
             if (expr) {
-                auto extract = eval_block(end_of_line + 1, indent + space_per_indent, scope);
+                auto extract = eval_block(next_line_begins, indent + SPACE_PER_INDENT, scope);
                 if (extract._exit) {
                     return { extract._result, extract._exit };
                 }
@@ -116,7 +115,7 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
             while (true) { //
                 if (eval_math<>(w, scope)._value) {
 
-                    auto extract = eval_block(end_of_line + 1, indent + space_per_indent, scope);
+                    auto extract = eval_block(next_line_begins, indent + SPACE_PER_INDENT, scope);
                     if (extract._exit) {
                         return { extract._result, true };
                     }
@@ -175,7 +174,7 @@ Result_And_Exit Parser::eval_block(Where w, const int indent, Scope& scope)
 
 void Parser::start(const char * const file_path)
 {
-    DEBUG_MSG("Hello World!\n");
+    DEBUG_MSG("Hello Debug!\n");
 
     //if (til_right_char <'(', ')'>("(12()34((45 + 2))56)") != 19) { throw std::invalid_argument("til_right_char does not work"); }
 
@@ -188,12 +187,47 @@ void Parser::start(const char * const file_path)
         f.getline(code, MAX_CODE_LEN - 1, '\0');
         if (f.fail()) { std::cerr << "FILE TOO LONG(Probably) ERROR!!!"; goto GOTO_CLOSE_FILE; }
 
-        // check for tabs
+        // check for tabs, calulate length + indent + where of ALL lines
         {
-            for (int i = 0; i < MAX_CODE_LEN - 1; ++i) {
-                if (code[i] == '\t') {
-                    std::cerr << "TAB TAB TAB TAB TAB!!!! AHH TAAAAAAAAAAAAAAB!! ERROR!";
-                    goto GOTO_CLOSE_FILE;
+            _lines[0]._w = 0;
+            { // things with line
+                int line = 1;
+                for (int i = 0; i < MAX_CODE_LEN - 1; ++i) {
+                    switch (code[i]) {
+                    case '\0':
+                        _lines[line]._w = i + 1;
+                        _lines[line]._indent = -1;
+                        ++line;
+                        goto GOTO_AFTER_FOR;
+                    case '\n':
+                        _lines[line]._w = i + 1;
+                        _lines[line]._indent = -1;
+                        ++line;
+                        break;
+                    case '\t':
+                        std::cerr << "TAB TAB TAB TAB TAB!!!! AHH TAAAAAAAAAAAAAAB!! ERROR!";
+                        goto GOTO_CLOSE_FILE;
+                    default:
+                        if ((code[i] != ' ') && (_lines[line - 1]._indent == -1)) {
+                            // code starts here
+                            int spaces = (i - _lines[line - 1]._w);
+                            if ((spaces % SPACE_PER_INDENT) != 0) {
+                                std::cerr << "WRONG INDENTATION ON LINE: " << (line) << '\n';
+                                goto GOTO_CLOSE_FILE;
+                            }
+                            else {
+                                _lines[line - 1]._indent = spaces;
+                            }
+                        }
+                        break;
+                    }
+                }
+                GOTO_AFTER_FOR:
+                _total_lines = line;
+                // make rest of lines NOT lines
+                for (int i = line; i < _MAX_LINES; ++i) {
+                    _lines[i]._w = -1;
+                    _lines[i]._indent = -1;
                 }
             }
         }
@@ -217,6 +251,4 @@ void Parser::start(const char * const file_path)
     else { //Error message
         std::cerr << "ERROR: Can't find input file " << std::endl;
     }
-
-    f.close();
 }

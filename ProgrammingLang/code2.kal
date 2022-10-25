@@ -6,12 +6,12 @@ def isPrime(n)
             return 0
         i = i + 1
     return 1
-
+    
 def primes(n)
     i = 0
     while i < n
         if isPrime(i)
             say (i) " is prime!"
         i = i + 1
-¨
-say (primes(100000))
+#¨
+say (primes(10000))

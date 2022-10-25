@@ -3,7 +3,7 @@
 constexpr long long SIZE = 128;
 // maxmimum chars in code file
 constexpr int MAX_CODE_LEN = 32768;
-constexpr int space_per_indent = 4;
+constexpr int SPACE_PER_INDENT = 4;
 
 constexpr int MAX_FUNC_PARAMS = 8;
 
@@ -20,6 +20,12 @@ struct Value_And_Where {
 struct Value_And_Length {
     int _value;
     int _length;
+};
+
+// contains where line starts and how long it is AND it's indent
+struct Line {
+    Where _w; // where does the line start EXACTLY 
+    int _indent; // will be -1 for illegal line
 };
 
 namespace OPER {

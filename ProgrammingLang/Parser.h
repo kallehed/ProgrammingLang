@@ -9,7 +9,15 @@
 
 class Parser
 {
+public:
+    Parser() = default;
+    void start(const char* const file_path);
+private:
     Funcs _funcs;
+
+    static constexpr int _MAX_LINES = 512;
+    std::array<Line, _MAX_LINES> _lines; // info about lines
+    int _total_lines = -1;
 
 	// returns value and AFTER where expression ends, ASSUMES buffer starts with '(' OR "CHARACTER NOT IMPORTANT TO EXPRESSION". Priority determines whether to stop att UN-priotirized like + or -.
 	template <bool priority = false>
@@ -22,10 +30,6 @@ class Parser
 
     // assumes to start ON line, NOT BEFORE: \nHERE
     Result_And_Exit eval_block(Where w, const int indent, Scope& scope);
-
-public:
-    Parser() = default;
-    void start(const char* const file_path);
 };
 
 template <bool priority>
@@ -130,7 +134,7 @@ Value_And_Where Parser::eval_math(Where w, Scope& scope, int result)
                         w += 2;
                     }
 
-                    direct_value = eval_block(func._w, space_per_indent, func._scope)._result;
+                    direct_value = eval_block(func._w, SPACE_PER_INDENT, func._scope)._result;
                 }
                 else { // Variable, just set to that value. w already handled
                     direct_value = scope.get_value(extr_name._name);
